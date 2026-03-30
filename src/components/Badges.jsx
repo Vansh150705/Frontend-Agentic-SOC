@@ -1,42 +1,47 @@
 const severityStyles = {
-  Critical: "bg-red-50 text-red-700",
-  High:     "bg-orange-50 text-orange-700",
-  Medium:   "bg-amber-50 text-amber-700",
-  Low:      "bg-green-50 text-green-700",
+  Critical: "bg-red-600 text-white",
+  HIGH:     "bg-orange-500 text-white",
+  High:     "bg-orange-500 text-white",
+  MEDIUM:   "bg-amber-400 text-white",
+  Medium:   "bg-amber-400 text-white",
+  LOW:      "bg-green-500 text-white",
+  Low:      "bg-green-500 text-white",
 };
 
 const statusStyles = {
-  Active:        "bg-red-50 text-red-600",
-  Blocked:       "bg-orange-50 text-orange-600",
-  Contained:     "bg-amber-50 text-amber-700",
-  Monitoring:    "bg-blue-50 text-blue-600",
-  Investigating: "bg-purple-50 text-purple-600",
-  Resolved:      "bg-green-50 text-green-700",
-  "In Progress": "bg-blue-50 text-blue-600",
-  Pending:       "bg-gray-100 text-gray-600",
+  Active:        "bg-red-500 text-white",
+  Blocked:       "bg-orange-500 text-white",
+  Contained:     "bg-amber-500 text-white",
+  Monitoring:    "bg-blue-500 text-white",
+  Investigating: "bg-purple-500 text-white",
+  Resolved:      "bg-green-500 text-white",
+  "In Progress": "bg-blue-400 text-white",
+  Pending:       "bg-gray-400 text-white",
+  open:          "bg-red-500 text-white",
+  "no action":   "bg-gray-400 text-white",
 };
 
 export const SeverityBadge = ({ severity }) => (
-  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${severityStyles[severity] || "bg-gray-100 text-gray-600"}`}>
+  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${severityStyles[severity] || "bg-gray-400 text-white"}`}>
     {severity}
   </span>
 );
 
 export const StatusBadge = ({ status }) => (
-  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${statusStyles[status] || "bg-gray-100 text-gray-600"}`}>
+  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${statusStyles[status] || "bg-gray-400 text-white"}`}>
     {status}
   </span>
 );
 
 export const LogLevelBadge = ({ level }) => {
   const s = {
-    CRITICAL: "bg-red-50 text-red-700",
-    ERROR:    "bg-orange-50 text-orange-700",
-    WARN:     "bg-amber-50 text-amber-700",
-    INFO:     "bg-gray-100 text-gray-600",
+    CRITICAL: "bg-red-600 text-white",
+    ERROR:    "bg-orange-500 text-white",
+    WARN:     "bg-amber-400 text-white",
+    INFO:     "bg-gray-400 text-white",
   };
   return (
-    <span className={`px-2 py-0.5 rounded text-xs font-medium ${s[level] || "bg-gray-100 text-gray-500"}`}>
+    <span className={`px-2 py-0.5 rounded text-xs font-semibold ${s[level] || "bg-gray-400 text-white"}`}>
       {level}
     </span>
   );

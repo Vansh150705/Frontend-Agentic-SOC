@@ -1,16 +1,24 @@
 import { useState } from "react";
 import { Search, X } from "lucide-react";
-import { SeverityBadge, StatusBadge } from "../components/Badges";
+import { SeverityBadge } from "../components/Badges";
 import { Table } from "../components/Table";
-import { liveThreats } from "../data/threatsData";
+
+
+import { useThreatsData } from "../hooks/useThreatsData";
 
 export const ThreatsPage = () => {
   const [severityFilter, setSeverityFilter] = useState("All");
   const [search, setSearch] = useState("");
 
-  const filtered = liveThreats.filter((t) => {
+
+  const { threats, loading, error } = useThreatsData();
+
+  const filtered = threats.filter((t) => {
     const sev = severityFilter === "All" || t.severity === severityFilter;
-    const q = !search || t.sourceIp.includes(search) || t.type.toLowerCase().includes(search.toLowerCase());
+ 
+    const q = !search ||
+      t.user.toLowerCase().includes(search.toLowerCase()) ||
+      t.type.toLowerCase().includes(search.toLowerCase());
     return sev && q;
   });
 
@@ -19,13 +27,14 @@ export const ThreatsPage = () => {
 
       {/* Filters */}
       <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex flex-wrap items-center gap-3">
-        
+
         {/* Search */}
         <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-2 flex-1 min-w-[180px]">
           <Search size={14} className="text-gray-400 shrink-0" />
           <input
             className="text-gray-700 text-sm outline-none flex-1 placeholder-gray-400 bg-transparent"
-            placeholder="Search by IP or threat type"
+
+            placeholder="Search by user or threat type"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -38,7 +47,7 @@ export const ThreatsPage = () => {
 
         {/* Severity filter */}
         <div className="flex items-center gap-1">
-          {["All", "Critical", "High", "Medium", "Low"].map((s) => (
+          {["All", "Critical", "HIGH", "MEDIUM", "LOW"].map((s) => (
             <button
               key={s}
               onClick={() => setSeverityFilter(s)}
@@ -58,29 +67,36 @@ export const ThreatsPage = () => {
 
       {/* Table */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <Table headers={["Time", "Source IP", "Threat Type", "Protocol", "Port", "Severity", "Status", "Action"]}>
-          {filtered.map((t) => (
-            <tr
-              key={t.id}
-              className={`hover:bg-gray-50 transition-colors ${
-                t.severity === "Critical" ? "border-l-2 border-red-400" : ""
-              }`}
-            >
-              <td className="px-4 py-3 font-mono text-gray-400 text-xs whitespace-nowrap">{t.time}</td>
-              <td className="px-4 py-3 font-mono text-blue-600 text-xs">{t.sourceIp}</td>
-              <td className="px-4 py-3 text-gray-700 text-sm">{t.type}</td>
-              <td className="px-4 py-3 text-gray-500 text-xs">{t.protocol}</td>
-              <td className="px-4 py-3 text-gray-400 text-xs">{t.port || "—"}</td>
-              <td className="px-4 py-3"><SeverityBadge severity={t.severity} /></td>
-              <td className="px-4 py-3"><StatusBadge status={t.status} /></td>
-              <td className="px-4 py-3">
-                <button className="px-2.5 py-1 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-100 text-xs transition-colors">
-                  Block
-                </button>
-              </td>
-            </tr>
-          ))}
-        </Table>
+
+        {loading && (
+          <p className="px-5 py-4 text-slate-400 text-xs">Loading threats…</p>
+        )}
+        {error && (
+          <p className="px-5 py-4 text-red-500 text-xs">Failed to load threats: {error}</p>
+        )}
+
+
+        {!loading && !error && (
+          <Table headers={["ID", "Date", "User", "Role", "Threat Type", "Severity"]}>
+            {filtered.map((t, index) => (
+              <tr
+                key={index}
+                className={`hover:bg-gray-50 transition-colors ${
+                  t.severity === "Critical" ? "border-l-2 border-red-400" : ""
+                }`}
+              >
+                <td className="px-4 py-3 font-mono text-gray-400 text-xs">{t.id}</td>
+                <td className="px-4 py-3 font-mono text-gray-400 text-xs whitespace-nowrap">{t.date}</td>
+                <td className="px-4 py-3 font-mono text-blue-600 text-xs">{t.user}</td>
+                <td className="px-4 py-3">
+                  <span className="bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded text-[10px] font-mono">{t.role}</span>
+                </td>
+                <td className="px-4 py-3 text-gray-700 text-sm">{t.type}</td>
+                <td className="px-4 py-3"><SeverityBadge severity={t.severity} /></td>
+              </tr>
+            ))}
+          </Table>
+        )}
       </div>
 
     </div>
