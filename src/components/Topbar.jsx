@@ -1,51 +1,57 @@
-import { Bell, ChevronDown, LogOut } from "lucide-react";
+import { Bell, LogOut } from "lucide-react";
 import NotifPanel from "./NotifPanel";
 
 const Topbar = ({ page, notifs, showNotif, setShowNotif }) => {
   const unread = notifs.filter((n) => !n.read).length;
-  const titles = { dashboard: "Overview", threats: "Threat Monitor", incidents: "Incident Management", logs: "Security Logs", admin: "Admin" };
+  const titles = {
+    dashboard: "Overview",
+    threats: "Threat Monitor",
+    incidents: "Incident Management",
+    logs: "Security Logs",
+    admin: "Admin",
+  };
 
   return (
-    <header className="h-13 bg-white border-b border-slate-200 flex items-center px-6 gap-4 shrink-0" style={{height: 52}}>
-      <div>
-        <h1 className="text-slate-900 font-semibold text-sm">{titles[page]}</h1>
-      </div>
+    <header className="h-14 bg-white border-b border-gray-200 flex items-center px-5 gap-4 shrink-0">
+      {/* Page title */}
+      <h1 className="text-gray-800 font-semibold text-base">{titles[page]}</h1>
 
-      {/* Live pill */}
-      <div className="flex items-center gap-1.5 bg-green-50 border border-green-200 rounded-full px-2.5 py-1 ml-2">
-        <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-        <span className="text-green-700 text-xs font-semibold">Live</span>
-      </div>
+      <div className="ml-auto flex items-center gap-3">
 
-      <div className="ml-auto flex items-center gap-2">
-        {/* Notif */}
+        {/* Notifications */}
         <div className="relative">
-          <button onClick={() => setShowNotif(!showNotif)}
-            className="relative p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-colors">
-            <Bell size={16} />
+          <button
+            onClick={() => setShowNotif(!showNotif)}
+            className="relative p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+          >
+            <Bell size={18} />
             {unread > 0 && (
-              <span className="absolute top-1 right-1 w-3.5 h-3.5 bg-red-500 rounded-full text-white text-[8px] font-bold flex items-center justify-center">{unread}</span>
+              <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 rounded-full text-white text-[9px] font-bold flex items-center justify-center">
+                {unread}
+              </span>
             )}
           </button>
-          {showNotif && <NotifPanel notifs={notifs} onClose={() => setShowNotif(false)} />}
+          {showNotif && (
+            <NotifPanel notifs={notifs} onClose={() => setShowNotif(false)} />
+          )}
         </div>
 
-        {/* Divider */}
-        <div className="w-px h-5 bg-slate-200" />
-
-        {/* Avatar */}
-        <div className="flex items-center gap-2 cursor-pointer rounded-lg px-2 py-1.5 hover:bg-slate-50 transition-colors">
-          <div className="w-7 h-7 rounded-full bg-slate-800 flex items-center justify-center text-white text-[11px] font-bold">AC</div>
-          <div className="hidden md:block">
-            <p className="text-slate-800 text-xs font-semibold leading-none">Alex Chen</p>
-            <p className="text-slate-400 text-[10px] mt-0.5">Admin</p>
+        {/* User */}
+        <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-1.5">
+          <div className="w-6 h-6 rounded-full bg-gray-800 flex items-center justify-center text-white text-[10px] font-bold">
+            AC
           </div>
-          <ChevronDown size={12} className="text-slate-400" />
+          <div>
+            <p className="text-gray-700 text-xs font-semibold leading-none">Alex Chen</p>
+            <p className="text-gray-400 text-[10px] mt-0.5">Admin</p>
+          </div>
         </div>
 
-        <button className="p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-colors">
-          <LogOut size={15} />
+        {/* Logout */}
+        <button className="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors">
+          <LogOut size={16} />
         </button>
+
       </div>
     </header>
   );
