@@ -53,7 +53,7 @@ const Sidebar = ({ active, setActive }) => (
     {/* Bottom user info */}
     <div className="px-4 py-3 border-t border-gray-100">
       <p className="text-gray-400 text-xs">Logged in as</p>
-      <p className="text-gray-700 text-sm font-medium">Alex Chen</p>
+      <p className="text-gray-700 text-sm font-medium">Kushagra Pandey</p>
     </div>
 
   </aside>

@@ -1,10 +1,56 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Edit2, Trash2 } from "lucide-react";
 import { Table } from "../components/Table";
 import { users } from "../data/usersData";
 
+// ── fetch Sheet1 for Activity tab only ────────────────────────────────────
+function useActivityData() {
+  const [activity, setActivity] = useState([]);
+  const [loading,  setLoading]  = useState(true);
+  const [error,    setError]    = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchActivity() {
+      try {
+        const url = `https://opensheet.elk.sh/1t8DDSoJ3-YTvvQgPt11yW6mqcGpqKQh4VTThUq0vVuc/Sheet1`;
+        const res  = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (!cancelled) {
+          setActivity(
+            data.map((row, i) => ({
+              key:      i,
+              user:     row["User"]    ?? "Unknown",
+              initials: (row["User"] ?? "?").slice(0, 2).toUpperCase(),
+              action:   row["Event"]   ?? row["Summary"] ?? "—",
+              time:     row["Date"]    ?? "",
+            }))
+          );
+          setError(null);
+        }
+      } catch (err) {
+        if (!cancelled) setError(err.message);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    fetchActivity();
+    const timer = setInterval(fetchActivity, 10_000);
+    return () => { cancelled = true; clearInterval(timer); };
+  }, []);
+
+  return { activity, loading, error };
+}
+
+// ── Main component ─────────────────────────────────────────────────────────
 export const AdminPage = () => {
   const [tab, setTab] = useState("users");
+
+  // ── ONLY CHANGE: hook for Activity tab data ──
+  const { activity, loading: actLoading, error: actError } = useActivityData();
 
   return (
     <div className="space-y-4">
@@ -26,7 +72,7 @@ export const AdminPage = () => {
         ))}
       </div>
 
-      {/* Users tab */}
+      {/* Users tab — unchanged */}
       {tab === "users" && (
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
@@ -88,7 +134,7 @@ export const AdminPage = () => {
         </div>
       )}
 
-      {/* Config tab */}
+      {/* Config tab — unchanged */}
       {tab === "config" && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[
@@ -130,34 +176,34 @@ export const AdminPage = () => {
         </div>
       )}
 
-      {/* Activity tab */}
+      {/* Activity tab — ── ONLY CHANGE: now fetches from Sheet1 ── */}
       {tab === "activity" && (
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-100">
             <h3 className="text-gray-800 font-semibold text-sm">Recent Activity</h3>
+            <p className="text-gray-400 text-xs mt-0.5">Live data from Google Sheets</p>
           </div>
-          <div className="divide-y divide-gray-100">
-            {[
-              { user: "Alex Chen", initials: "AC", action: "Modified firewall ruleset #487", time: "14:32" },
-              { user: "Sarah Kim", initials: "SK", action: "Closed INC-2024-004 as Resolved", time: "10:45" },
-              { user: "Marcus Johnson", initials: "MJ", action: "Added new IDS signature", time: "09:12" },
-              { user: "Alex Chen", initials: "AC", action: "Revoked API key for svc-03", time: "08:55" },
-              { user: "Priya Patel", initials: "PP", action: "Exported log bundle for 2024-01-14", time: "08:30" },
-              { user: "Alex Chen", initials: "AC", action: "Added user lena.muller@soc.corp", time: "Yesterday" },
-            ].map((a, i) => (
-              <div key={i} className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition-colors">
-                <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 text-xs font-semibold shrink-0">
-                  {a.initials}
+
+          {actLoading && <p className="px-5 py-4 text-slate-400 text-xs">Loading activity…</p>}
+          {actError   && <p className="px-5 py-4 text-red-500 text-xs">Failed to load: {actError}</p>}
+
+          {!actLoading && !actError && (
+            <div className="divide-y divide-gray-100">
+              {activity.map((a) => (
+                <div key={a.key} className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition-colors">
+                  <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 text-xs font-semibold shrink-0">
+                    {a.initials}
+                  </div>
+                  <div className="flex-1 text-sm">
+                    <span className="text-gray-800 font-medium">{a.user}</span>
+                    <span className="text-gray-400 mx-1.5">·</span>
+                    <span className="text-gray-500">{a.action}</span>
+                  </div>
+                  <span className="text-gray-400 text-xs shrink-0">{a.time}</span>
                 </div>
-                <div className="flex-1 text-sm">
-                  <span className="text-gray-800 font-medium">{a.user}</span>
-                  <span className="text-gray-400 mx-1.5">·</span>
-                  <span className="text-gray-500">{a.action}</span>
-                </div>
-                <span className="text-gray-400 text-xs shrink-0">{a.time}</span>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

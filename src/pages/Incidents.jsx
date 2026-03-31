@@ -1,16 +1,21 @@
 import { useState } from "react";
-import { Plus, ChevronRight, X, CheckCircle } from "lucide-react";
+import { Plus, ChevronRight, X } from "lucide-react";
 import { SeverityBadge, StatusBadge } from "../components/Badges";
-import { incidents } from "../data/incidentsData";
+
+// ── ONLY CHANGE: replaced static incidents import with live Google Sheets hook ──
+import { useIncidentsData } from "../hooks/useIncidentsData";
 
 export const IncidentsPage = () => {
-  const [selected, setSelected] = useState(null);
-  const [statusFilter, setStatusFilter] = useState("All");
+  const [selected,      setSelected]      = useState(null);
+  const [statusFilter,  setStatusFilter]  = useState("All");
+
+  // ── ONLY CHANGE: fetch incidents dynamically ──
+  const { incidents, loading, error } = useIncidentsData();
 
   const filtered =
     statusFilter === "All"
       ? incidents
-      : incidents.filter((i) => i.status === statusFilter);
+      : incidents.filter((i) => i.status?.toLowerCase() === statusFilter.toLowerCase());
 
   return (
     <div className="flex gap-4 h-full">
@@ -20,7 +25,7 @@ export const IncidentsPage = () => {
 
         {/* Filter bar */}
         <div className="flex items-center gap-2 flex-wrap">
-          {["All", "Pending", "In Progress", "Resolved"].map((s) => (
+          {["All", "open", "no action"].map((s) => (
             <button
               key={s}
               onClick={() => setStatusFilter(s)}
@@ -38,13 +43,17 @@ export const IncidentsPage = () => {
           </button>
         </div>
 
+        {/* Loading / error states */}
+        {loading && <p className="text-slate-400 text-xs px-1">Loading incidents…</p>}
+        {error   && <p className="text-red-500 text-xs px-1">Failed to load: {error}</p>}
+
         {/* Incident cards */}
-        {filtered.map((inc) => (
+        {!loading && !error && filtered.map((inc) => (
           <div
-            key={inc.id}
+            key={inc._index}
             onClick={() => setSelected(inc)}
             className={`bg-white border rounded-xl p-4 cursor-pointer transition-all ${
-              selected?.id === inc.id
+              selected?._index === inc._index
                 ? "border-blue-300 ring-1 ring-blue-100"
                 : "border-gray-200 hover:border-gray-300"
             }`}
@@ -52,14 +61,17 @@ export const IncidentsPage = () => {
             <div className="flex items-start gap-3">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                  {/* ── ONLY CHANGE: id derived from AlertID ── */}
                   <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded font-medium">
                     {inc.id}
                   </span>
                   <SeverityBadge severity={inc.severity} />
                   <StatusBadge status={inc.status} />
                 </div>
+                {/* ── ONLY CHANGE: title from Event column ── */}
                 <p className="text-gray-800 text-sm font-semibold">{inc.title}</p>
                 <div className="flex items-center gap-3 mt-1.5 text-gray-400 text-xs">
+                  {/* ── ONLY CHANGE: assignee from User column ── */}
                   <span>{inc.assignee}</span>
                   <span>·</span>
                   <span>{inc.updated}</span>
@@ -95,19 +107,19 @@ export const IncidentsPage = () => {
               <h2 className="text-gray-800 font-semibold text-sm leading-snug mb-2.5">
                 {selected.title}
               </h2>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <SeverityBadge severity={selected.severity} />
                 <StatusBadge status={selected.status} />
               </div>
             </div>
 
-            {/* Meta */}
+            {/* Meta — ── ONLY CHANGE: fields mapped to sheet columns, systems/actions removed ── */}
             <div className="p-5 border-b border-gray-100 space-y-2">
               {[
                 ["Assignee", selected.assignee],
-                ["Created", selected.created.split(" ")[0]],
-                ["Updated", selected.updated.split(" ")[0]],
-                ["Systems affected", selected.systems.length],
+                ["Role",     selected.role],
+                ["Date",     selected.created],
+                ["Updated",  selected.updated],
               ].map(([k, v]) => (
                 <div key={k} className="flex items-center justify-between">
                   <span className="text-gray-400 text-xs">{k}</span>
@@ -116,38 +128,10 @@ export const IncidentsPage = () => {
               ))}
             </div>
 
-            {/* Description */}
+            {/* Description — from Summary column */}
             <div className="p-5 border-b border-gray-100">
               <p className="text-gray-500 text-xs font-medium mb-1.5">Description</p>
               <p className="text-gray-600 text-xs leading-relaxed">{selected.description}</p>
-            </div>
-
-            {/* Affected systems */}
-            <div className="p-5 border-b border-gray-100">
-              <p className="text-gray-500 text-xs font-medium mb-2">Affected Systems</p>
-              <div className="flex flex-wrap gap-1.5">
-                {selected.systems.map((s) => (
-                  <span
-                    key={s}
-                    className="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded"
-                  >
-                    {s}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Actions taken */}
-            <div className="p-5 border-b border-gray-100">
-              <p className="text-gray-500 text-xs font-medium mb-2">Actions Taken</p>
-              <ul className="space-y-2">
-                {selected.actions.map((a) => (
-                  <li key={a} className="flex items-start gap-2 text-xs text-gray-600">
-                    <CheckCircle size={12} className="text-green-500 mt-0.5 shrink-0" />
-                    {a}
-                  </li>
-                ))}
-              </ul>
             </div>
 
             {/* Update status */}

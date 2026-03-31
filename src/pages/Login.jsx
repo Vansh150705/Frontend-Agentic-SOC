@@ -2,10 +2,9 @@ import { useState } from "react";
 import { Shield, RefreshCw } from "lucide-react";
 
 export const LoginPage = ({ onLogin }) => {
-  const [email, setEmail] = useState("");
+  const [email,    setEmail]    = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("Admin");
-  const [loading, setLoading] = useState(false);
+  const [loading,  setLoading]  = useState(false);
 
   const handleLogin = () => {
     setLoading(true);
@@ -27,23 +26,6 @@ export const LoginPage = ({ onLogin }) => {
 
         <h1 className="text-xl font-semibold text-gray-800 mb-1">Welcome back</h1>
         <p className="text-gray-400 text-sm mb-6">Sign in to your account to continue</p>
-
-        {/* Role selector */}
-        <div className="flex gap-2 mb-5">
-          {["Admin", "Analyst"].map((r) => (
-            <button
-              key={r}
-              onClick={() => setRole(r)}
-              className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-all ${
-                role === r
-                  ? "bg-gray-900 text-white border-gray-900"
-                  : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"
-              }`}
-            >
-              {r}
-            </button>
-          ))}
-        </div>
 
         {/* Fields */}
         <div className="space-y-4 mb-5">
