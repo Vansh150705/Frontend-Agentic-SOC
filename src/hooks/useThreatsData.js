@@ -1,15 +1,29 @@
 import { useState, useEffect } from "react";
 
-const SHEET_ID = "1pz0k4MUBUVreH-yC-H3D2ZYAqfbZys2ef-kafEGFOJI";
+const API_KEY    = "AIzaSyCsyetR0952FRT2gpbv3f2K4fB0Sx0N3xo";
+const SHEET_ID   = "1pz0k4MUBUVreH-yC-H3D2ZYAqfbZys2ef-kafEGFOJI";
 const SHEET_NAME = "user history";
-const REFRESH_INTERVAL_MS = 10_000;
+const REFRESH_MS = 10_000;
+
+function sheetsUrl(spreadsheetId, sheetName) {
+  const range = encodeURIComponent(`${sheetName}!A1:Z1000`);
+  return `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${API_KEY}`;
+}
+
+function parseSheet(json) {
+  const [headers, ...rows] = json.values ?? [];
+  if (!headers) return [];
+  return rows.map(row =>
+    Object.fromEntries(headers.map((h, i) => [h, row[i] ?? ""]))
+  );
+}
 
 function mapRow(row) {
   return {
     id:       row["AlertID"]  ?? "",
     user:     row["User"]     ?? "",
     role:     row["Role"]     ?? "",
-    type: row["Event"] ?? row["event"] ?? row[" Event"] ?? row["Event "] ?? "",
+    type:     row["Event"]    ?? "",
     date:     row["Date"]     ?? "",
     severity: row["Severity"] ?? "",
   };
@@ -18,22 +32,20 @@ function mapRow(row) {
 export function useThreatsData() {
   const [threats, setThreats] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState(null);
+  const [error,   setError]   = useState(null);
 
   useEffect(() => {
     let cancelled = false;
 
     async function fetchThreats() {
       try {
-        const url = `https://opensheet.elk.sh/${SHEET_ID}/${encodeURIComponent(SHEET_NAME)}`;
-        const res = await fetch(url);
+        const res = await fetch(sheetsUrl(SHEET_ID, SHEET_NAME));
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
+        const json = await res.json();
         if (!cancelled) {
-          // filter out rows where both id and user are empty/zero
-          const clean = data
+          const clean = parseSheet(json)
             .map(mapRow)
-            .filter((r) => r.user && r.user !== "0");
+            .filter(r => r.user && r.user !== "0");
           setThreats(clean);
           setError(null);
         }
@@ -45,12 +57,8 @@ export function useThreatsData() {
     }
 
     fetchThreats();
-
-    if (REFRESH_INTERVAL_MS > 0) {
-      const timer = setInterval(fetchThreats, REFRESH_INTERVAL_MS);
-      return () => { cancelled = true; clearInterval(timer); };
-    }
-    return () => { cancelled = true; };
+    const timer = setInterval(fetchThreats, REFRESH_MS);
+    return () => { cancelled = true; clearInterval(timer); };
   }, []);
 
   return { threats, loading, error };

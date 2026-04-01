@@ -1,11 +1,23 @@
-// src/hooks/useLogsData.js
 import { useState, useEffect } from "react";
 
+const API_KEY    = "AIzaSyCsyetR0952FRT2gpbv3f2K4fB0Sx0N3xo";
 const SHEET_ID   = "1t8DDSoJ3-YTvvQgPt11yW6mqcGpqKQh4VTThUq0vVuc";
 const SHEET_NAME = "Sheet1";
-const REFRESH_INTERVAL_MS = 10_000;
+const REFRESH_MS = 10_000;
 
-// map sheet Severity to log level
+function sheetsUrl(spreadsheetId, sheetName) {
+  const range = encodeURIComponent(`${sheetName}!A1:Z1000`);
+  return `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${API_KEY}`;
+}
+
+function parseSheet(json) {
+  const [headers, ...rows] = json.values ?? [];
+  if (!headers) return [];
+  return rows.map(row =>
+    Object.fromEntries(headers.map((h, i) => [h, row[i] ?? ""]))
+  );
+}
+
 function severityToLevel(severity) {
   const s = severity?.toUpperCase();
   if (s === "CRITICAL") return "CRITICAL";
@@ -17,10 +29,10 @@ function severityToLevel(severity) {
 function mapRow(row, index) {
   return {
     id:        index,
-    timestamp: row["Date"]      ?? "",
+    timestamp: row["Date"]    ?? "",
     level:     severityToLevel(row["Severity"]),
-    source:    row["User"]      ?? "",
-    event:     row["Summary"]   ?? row["Event"] ?? "",
+    source:    row["User"]    ?? "",
+    event:     row["Summary"] ?? row["Event"] ?? "",
   };
 }
 
@@ -34,12 +46,11 @@ export function useLogsData() {
 
     async function fetchLogs() {
       try {
-        const url = `https://opensheet.elk.sh/${SHEET_ID}/${encodeURIComponent(SHEET_NAME)}`;
-        const res  = await fetch(url);
+        const res = await fetch(sheetsUrl(SHEET_ID, SHEET_NAME));
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
+        const json = await res.json();
         if (!cancelled) {
-          setLogs(data.map(mapRow));
+          setLogs(parseSheet(json).map(mapRow));
           setError(null);
         }
       } catch (err) {
@@ -50,12 +61,8 @@ export function useLogsData() {
     }
 
     fetchLogs();
-
-    if (REFRESH_INTERVAL_MS > 0) {
-      const timer = setInterval(fetchLogs, REFRESH_INTERVAL_MS);
-      return () => { cancelled = true; clearInterval(timer); };
-    }
-    return () => { cancelled = true; };
+    const timer = setInterval(fetchLogs, REFRESH_MS);
+    return () => { cancelled = true; clearInterval(timer); };
   }, []);
 
   return { logs, loading, error };

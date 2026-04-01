@@ -1,15 +1,28 @@
 import { useState, useEffect, useRef } from "react";
 
-// ── Sheet 1: alert record ──────────────────────────────────────────────────
-const ALERTS_SHEET_ID   = "1t8DDSoJ3-YTvvQgPt11yW6mqcGpqKQh4VTThUq0vVuc";
-const ALERTS_SHEET_NAME = "Sheet1";
+const API_KEY        = "AIzaSyCsyetR0952FRT2gpbv3f2K4fB0Sx0N3xo";
+const ALERTS_ID      = "1t8DDSoJ3-YTvvQgPt11yW6mqcGpqKQh4VTThUq0vVuc";
+const THREATS_ID     = "1pz0k4MUBUVreH-yC-H3D2ZYAqfbZys2ef-kafEGFOJI";
+const REFRESH_MS     = 10_000;
 
-// ── Sheet 2: user history ──────────────────────────────────────────────────
-const THREATS_SHEET_ID   = "1pz0k4MUBUVreH-yC-H3D2ZYAqfbZys2ef-kafEGFOJI";
-const THREATS_SHEET_NAME = "user history";
+// ── Google Sheets API URL builder ─────────────────────────────────────────
+function sheetsUrl(spreadsheetId, sheetName) {
+  const range = encodeURIComponent(`${sheetName}!A1:Z1000`);
+  return `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${API_KEY}`;
+}
 
-const REFRESH_INTERVAL_MS = 10_000;
-
+// ── Convert raw API response to array of objects ──────────────────────────
+function parseSheet(json) {
+  const values = json.values ?? [];
+  if (values.length < 2) return [];
+  const headers = values[0];
+  const rows = values.slice(1);
+  return rows
+    .filter(row => row.length > 0 && row.some(cell => String(cell).trim() !== ""))
+    .map(row =>
+      Object.fromEntries(headers.map((h, i) => [h, (row[i] ?? "").toString().trim()]))
+    );
+}
 // ── Row mappers ────────────────────────────────────────────────────────────
 function mapAlertRow(row) {
   return {
@@ -59,24 +72,21 @@ function computeSeverityDist(alerts) {
 
 function computeThreatTrend(threats) {
   const map = {};
-  threats
-    .filter(t => t.user && t.user !== "0")
-    .forEach(t => {
-      const date = t.date || "Unknown";
-      if (!map[date]) map[date] = { time: date, critical: 0, high: 0, medium: 0 };
-      const s = t.severity?.toUpperCase();
-      if      (s === "CRITICAL") map[date].critical++;
-      else if (s === "HIGH")     map[date].high++;
-      else if (s === "MEDIUM")   map[date].medium++;
-    });
+  threats.filter(t => t.user && t.user !== "0").forEach(t => {
+    const date = t.date || "Unknown";
+    if (!map[date]) map[date] = { time: date, critical: 0, high: 0, medium: 0 };
+    const s = t.severity?.toUpperCase();
+    if      (s === "CRITICAL") map[date].critical++;
+    else if (s === "HIGH")     map[date].high++;
+    else if (s === "MEDIUM")   map[date].medium++;
+  });
 
   const parseDate = (d) => {
     if (!d || d === "Unknown") return new Date(0);
     if (d.includes("-")) return new Date(d);
     const [day, month, year] = d.split("/");
-    return new Date(`${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`);
+    return new Date(`${year}-${String(month).padStart(2,"0")}-${String(day).padStart(2,"0")}`);
   };
-
   return Object.values(map).sort((a, b) => parseDate(a.time) - parseDate(b.time));
 }
 
@@ -97,7 +107,6 @@ export function useAlertsData(onNewAlerts) {
   const [loading,      setLoading]      = useState(true);
   const [error,        setError]        = useState(null);
 
-  // track seen rows across fetches using composite key
   const seenIds = useRef(new Set());
 
   useEffect(() => {
@@ -106,26 +115,23 @@ export function useAlertsData(onNewAlerts) {
     async function fetchAll() {
       try {
         const [alertsRes, threatsRes] = await Promise.all([
-          fetch(`https://opensheet.elk.sh/${ALERTS_SHEET_ID}/${encodeURIComponent(ALERTS_SHEET_NAME)}`),
-          fetch(`https://opensheet.elk.sh/${THREATS_SHEET_ID}/${encodeURIComponent(THREATS_SHEET_NAME)}`),
+          fetch(sheetsUrl(ALERTS_ID,  "Sheet1")),
+          fetch(sheetsUrl(THREATS_ID, "user history")),
         ]);
 
-        if (!alertsRes.ok)  throw new Error(`Alerts sheet: HTTP ${alertsRes.status}`);
-        if (!threatsRes.ok) throw new Error(`Threats sheet: HTTP ${threatsRes.status}`);
+        if (!alertsRes.ok)  throw new Error(`Alerts: HTTP ${alertsRes.status}`);
+        if (!threatsRes.ok) throw new Error(`Threats: HTTP ${threatsRes.status}`);
 
-        const [alertsRaw, threatsRaw] = await Promise.all([
+        const [alertsJson, threatsJson] = await Promise.all([
           alertsRes.json(),
           threatsRes.json(),
         ]);
 
         if (!cancelled) {
-          const mappedAlerts  = alertsRaw.map(mapAlertRow);
-          const mappedThreats = threatsRaw.map(mapThreatRow);
+          const mappedAlerts  = parseSheet(alertsJson).map(mapAlertRow);
+          const mappedThreats = parseSheet(threatsJson).map(mapThreatRow);
 
-          // composite key so duplicate AlertIDs don't collide
           const makeKey = (a) => `${a.id}-${a.user}-${a.time}`;
-
-          // find ALL rows not seen yet — includes existing rows on first load
           const newRows = mappedAlerts.filter(a => !seenIds.current.has(makeKey(a)));
 
           if (newRows.length > 0 && onNewAlerts) {
@@ -156,12 +162,8 @@ export function useAlertsData(onNewAlerts) {
     }
 
     fetchAll();
-
-    if (REFRESH_INTERVAL_MS > 0) {
-      const timer = setInterval(fetchAll, REFRESH_INTERVAL_MS);
-      return () => { cancelled = true; clearInterval(timer); };
-    }
-    return () => { cancelled = true; };
+    const timer = setInterval(fetchAll, REFRESH_MS);
+    return () => { cancelled = true; clearInterval(timer); };
   }, []);
 
   return { alerts, stats, severityDist, threatTrend, loading, error };
