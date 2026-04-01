@@ -7,20 +7,21 @@ import { IncidentsPage } from "./pages/Incidents";
 import { LogsPage } from "./pages/Logs";
 import { AdminPage } from "./pages/Admin";
 import { LoginPage } from "./pages/Login";
+import { useAlertSound } from "./hooks/useAlertSound";
 
 export default function App() {
   const [loggedIn,  setLoggedIn]  = useState(false);
   const [page,      setPage]      = useState("dashboard");
   const [collapsed, setCollapsed] = useState(false);
   const [showNotif, setShowNotif] = useState(false);
+  const [notifs,    setNotifs]    = useState([]);
 
-  // starts empty — populated entirely from Google Sheets
-  const [notifs, setNotifs] = useState([]);
+  const { playAlert } = useAlertSound();
 
-  // called by useAlertsData whenever new rows are detected (including on first load)
   const handleNewAlerts = useCallback((newNotifs) => {
-    setNotifs(prev => [...newNotifs, ...prev]); // newest at top
-  }, []);
+    setNotifs(prev => [...newNotifs, ...prev]);
+    playAlert(); // ── play sound on every new alert ──
+  }, [playAlert]);
 
   if (!loggedIn) return <LoginPage onLogin={() => setLoggedIn(true)} />;
 
