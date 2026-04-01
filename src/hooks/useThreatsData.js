@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-const API_KEY    = "AIzaSyCsyetR0952FRT2gpbv3f2K4fB0Sx0N3xo";
+const API_KEY = import.meta.env.VITE_GOOGLE_API_KEY;
 const SHEET_ID   = "1pz0k4MUBUVreH-yC-H3D2ZYAqfbZys2ef-kafEGFOJI";
 const SHEET_NAME = "user history";
 const REFRESH_MS = 10_000;
