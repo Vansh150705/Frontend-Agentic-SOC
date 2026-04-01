@@ -2,56 +2,36 @@ import {
   AreaChart, Area, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from "recharts";
-import { AlertTriangle, CheckCircle, ShieldAlert, AlertOctagon, ExternalLink } from "lucide-react";
+import { AlertTriangle, CheckCircle, ShieldAlert, AlertOctagon, ExternalLink, Download } from "lucide-react";
 import StatCard from "../components/StatCard";
 import { ChartTooltip } from "../components/ChartTooltip";
 import { SeverityBadge, StatusBadge } from "../components/Badges";
 import { Table } from "../components/Table";
 import { useAlertsData } from "../hooks/useAlertsData";
+import { exportToPDF } from "../utils/exportPDF";
 
-// ── onNewAlerts is passed down from App.jsx ────────────────────────────────
 export const DashboardPage = ({ onNewAlerts }) => {
   const { alerts: recentAlerts, stats, severityDist, threatTrend, loading, error } = useAlertsData(onNewAlerts);
+
+  function handleExport() {
+    exportToPDF({
+      title:   "Recent Alerts Report",
+      headers: ["Date", "Event", "User", "Role", "Severity", "Status", "Summary"],
+      rows:    recentAlerts.map(a => [a.time, a.type, a.user, a.role, a.severity, a.status, a.summary]),
+    });
+  }
 
   return (
     <div className="space-y-6">
 
-      {/* ── Stat Cards ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          label="Total Alerts"
-          value={loading ? "…" : String(stats.total)}
-          icon={AlertTriangle}
-          accent="red"
-          sublabel="All records in sheet"
-        />
-        <StatCard
-          label="HIGH Severity"
-          value={loading ? "…" : String(stats.highCount)}
-          icon={AlertOctagon}
-          accent="orange"
-          sublabel="Needs attention"
-        />
-        <StatCard
-          label="Open Alerts"
-          value={loading ? "…" : String(stats.openCount)}
-          icon={ShieldAlert}
-          accent="green"
-          sublabel="Status = open"
-        />
-        <StatCard
-          label="No Action Taken"
-          value={loading ? "…" : String(stats.noAction)}
-          icon={CheckCircle}
-          accent="blue"
-          sublabel="Status = no action"
-        />
+        <StatCard label="Total Alerts"    value={loading ? "…" : String(stats.total)}     icon={AlertTriangle} accent="red"    sublabel="All records in sheet" />
+        <StatCard label="HIGH Severity"   value={loading ? "…" : String(stats.highCount)} icon={AlertOctagon}  accent="orange" sublabel="Needs attention" />
+        <StatCard label="Open Alerts"     value={loading ? "…" : String(stats.openCount)} icon={ShieldAlert}   accent="green"  sublabel="Status = open" />
+        <StatCard label="No Action Taken" value={loading ? "…" : String(stats.noAction)}  icon={CheckCircle}   accent="blue"   sublabel="Status = no action" />
       </div>
 
-      {/* ── Charts row ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-
-        {/* Area chart */}
         <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
@@ -59,7 +39,6 @@ export const DashboardPage = ({ onNewAlerts }) => {
               <p className="text-slate-400 text-xs mt-0.5">Volume by severity — by date</p>
             </div>
           </div>
-
           <div className="flex items-center gap-4 mb-3">
             {[["Critical", "#dc2626"], ["High", "#ea580c"], ["Medium", "#ca8a04"]].map(([l, c]) => (
               <div key={l} className="flex items-center gap-1.5">
@@ -68,7 +47,6 @@ export const DashboardPage = ({ onNewAlerts }) => {
               </div>
             ))}
           </div>
-
           {loading ? (
             <p className="text-slate-400 text-xs py-10 text-center">Loading chart…</p>
           ) : (
@@ -94,23 +72,16 @@ export const DashboardPage = ({ onNewAlerts }) => {
           )}
         </div>
 
-        {/* Donut chart */}
         <div className="bg-white rounded-xl border border-slate-200 p-5">
           <h3 className="text-slate-800 font-semibold text-sm mb-0.5">Distribution</h3>
           <p className="text-slate-400 text-xs mb-3">By severity — alert record</p>
-
           {loading ? (
             <p className="text-slate-400 text-xs py-10 text-center">Loading…</p>
           ) : (
             <>
               <ResponsiveContainer width="100%" height={160}>
                 <PieChart>
-                  <Pie
-                    data={severityDist}
-                    cx="50%" cy="50%"
-                    innerRadius={45} outerRadius={72}
-                    paddingAngle={2} dataKey="value" strokeWidth={0}
-                  >
+                  <Pie data={severityDist} cx="50%" cy="50%" innerRadius={45} outerRadius={72} paddingAngle={2} dataKey="value" strokeWidth={0}>
                     {severityDist.map((e) => <Cell key={e.name} fill={e.color} />)}
                   </Pie>
                   <Tooltip content={<ChartTooltip />} />
@@ -133,16 +104,22 @@ export const DashboardPage = ({ onNewAlerts }) => {
         </div>
       </div>
 
-      {/* ── Recent Alerts table ── */}
       <div className="bg-white rounded-xl border border-slate-200">
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
           <div>
             <h3 className="text-slate-800 font-semibold text-sm">Recent Alerts</h3>
             <p className="text-slate-400 text-xs mt-0.5">Live data from Google Sheets</p>
           </div>
-          <button className="text-blue-600 text-xs font-medium hover:text-blue-700 flex items-center gap-1">
-            All alerts <ExternalLink size={11} />
-          </button>
+          <div className="flex items-center gap-2">
+            {!loading && !error && (
+              <button onClick={handleExport} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 text-xs font-medium hover:bg-slate-50 transition-colors">
+                <Download size={12} /> Export PDF
+              </button>
+            )}
+            <button className="text-blue-600 text-xs font-medium hover:text-blue-700 flex items-center gap-1">
+              All alerts <ExternalLink size={11} />
+            </button>
+          </div>
         </div>
 
         {loading && <p className="px-5 py-4 text-slate-400 text-xs">Loading alerts…</p>}
@@ -155,9 +132,7 @@ export const DashboardPage = ({ onNewAlerts }) => {
                 <td className="px-4 py-2.5 font-mono text-slate-400 text-[11px]">{a.time}</td>
                 <td className="px-4 py-2.5 text-slate-700 font-medium">{a.type}</td>
                 <td className="px-4 py-2.5 font-mono text-blue-600 font-medium text-[11px]">{a.user}</td>
-                <td className="px-4 py-2.5">
-                  <span className="bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded text-[10px] font-mono">{a.role}</span>
-                </td>
+                <td className="px-4 py-2.5"><span className="bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded text-[10px] font-mono">{a.role}</span></td>
                 <td className="px-4 py-2.5"><SeverityBadge severity={a.severity} /></td>
                 <td className="px-4 py-2.5"><StatusBadge status={a.status} /></td>
                 <td className="px-4 py-2.5 text-slate-500 text-xs max-w-xs truncate" title={a.summary}>{a.summary}</td>
