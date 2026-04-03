@@ -42,7 +42,7 @@ const Topbar = ({ page, notifs, showNotif, setShowNotif }) => {
             AC
           </div>
           <div>
-            <p className="text-gray-700 text-xs font-semibold leading-none">Kushagra Pandey</p>
+            <p className="text-gray-700 text-xs font-semibold leading-none">Vansh Mahajan</p>
             <p className="text-gray-400 text-[10px] mt-0.5">Admin</p>
           </div>
         </div>
