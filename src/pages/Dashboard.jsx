@@ -16,14 +16,15 @@ export const DashboardPage = ({ onNewAlerts }) => {
   function handleExport() {
     exportToPDF({
       title:   "Recent Alerts Report",
-      headers: ["Date", "Event", "User", "Role", "Severity", "Status", "Summary"],
-      rows:    recentAlerts.map(a => [a.time, a.type, a.user, a.role, a.severity, a.status, a.summary]),
+      headers: ["Date", "User", "Event", "Source IP", "Severity", "Status", "Outcome", "Summary"],
+      rows:    recentAlerts.map(a => [a.time, a.user, a.type, a.sourceIp, a.severity, a.status, a.outcome, a.summary]),
     });
   }
 
   return (
     <div className="space-y-6">
 
+      {/* ── Stat Cards ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Total Alerts"    value={loading ? "…" : String(stats.total)}     icon={AlertTriangle} accent="red"    sublabel="All records in sheet" />
         <StatCard label="HIGH Severity"   value={loading ? "…" : String(stats.highCount)} icon={AlertOctagon}  accent="orange" sublabel="Needs attention" />
@@ -31,6 +32,7 @@ export const DashboardPage = ({ onNewAlerts }) => {
         <StatCard label="No Action Taken" value={loading ? "…" : String(stats.noAction)}  icon={CheckCircle}   accent="blue"   sublabel="Status = no action" />
       </div>
 
+      {/* ── Charts row ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-5">
           <div className="flex items-center justify-between mb-4">
@@ -104,6 +106,7 @@ export const DashboardPage = ({ onNewAlerts }) => {
         </div>
       </div>
 
+      {/* ── Recent Alerts table ── */}
       <div className="bg-white rounded-xl border border-slate-200">
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
           <div>
@@ -126,15 +129,16 @@ export const DashboardPage = ({ onNewAlerts }) => {
         {error   && <p className="px-5 py-4 text-red-500 text-xs">Failed to load: {error}</p>}
 
         {!loading && !error && (
-          <Table headers={["Date", "Event", "User", "Role", "Severity", "Status", "Summary"]}>
+          <Table headers={["Date", "User", "Event", "Source IP", "Severity", "Status", "Outcome", "Summary"]}>
             {recentAlerts.map((a, index) => (
               <tr key={index} className="hover:bg-slate-50 transition-colors">
-                <td className="px-4 py-2.5 font-mono text-slate-400 text-[11px]">{a.time}</td>
-                <td className="px-4 py-2.5 text-slate-700 font-medium">{a.type}</td>
+                <td className="px-4 py-2.5 font-mono text-slate-400 text-[11px] whitespace-nowrap">{a.time}</td>
                 <td className="px-4 py-2.5 font-mono text-blue-600 font-medium text-[11px]">{a.user}</td>
-                <td className="px-4 py-2.5"><span className="bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded text-[10px] font-mono">{a.role}</span></td>
+                <td className="px-4 py-2.5 text-slate-700 font-medium text-xs">{a.type}</td>
+                <td className="px-4 py-2.5 font-mono text-slate-400 text-[11px]">{a.sourceIp || "—"}</td>
                 <td className="px-4 py-2.5"><SeverityBadge severity={a.severity} /></td>
                 <td className="px-4 py-2.5"><StatusBadge status={a.status} /></td>
+                <td className="px-4 py-2.5 text-slate-500 text-xs">{a.outcome || "—"}</td>
                 <td className="px-4 py-2.5 text-slate-500 text-xs max-w-xs truncate" title={a.summary}>{a.summary}</td>
               </tr>
             ))}
