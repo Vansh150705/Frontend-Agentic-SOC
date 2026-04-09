@@ -10,7 +10,6 @@ function sheetsUrl(spreadsheetId, sheetName) {
   return `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${API_KEY}`;
 }
 
-// ── Fixed parseSheet — handles short/incomplete rows ──────────────────────
 function parseSheet(json) {
   const values = json.values ?? [];
   if (values.length < 2) return [];
@@ -26,16 +25,25 @@ function parseSheet(json) {
 function mapRow(row, index) {
   const alertId = row["AlertID"] ?? "";
   return {
-    id:          `INC-${String(alertId).padStart(3, "0")}`,
-    title:       row["Event"]       ?? "Untitled Incident",
-    assignee:    row["User"]        ?? "Unassigned",
-    role:        row["Role"]        ?? "",
-    severity:    row["Severity"]    ?? "",
-    status:      row["Status"]      ?? "",
-    description: row["Summary"]     ?? "No description available.",
-    created:     row["Date"]        ?? "",
-    updated:     row["LastUpdated"] ?? row["Date"] ?? "",
-    _index:      index,
+    id:                    `INC-${String(alertId).padStart(3, "0")}`,
+    title:                 row["Event"]                ?? "Untitled Incident",
+    assignee:              row["User"]                 ?? "Unassigned",
+    role:                  row["Role"]                 ?? "",
+    sourceIp:              row["SourceIP"]             ?? "",
+    service:               row["Service"]              ?? "",
+    outcome:               row["Outcome"]              ?? "",
+    severity:              row["Severity"]             ?? "",
+    noise:                 row["Noise"]                ?? "",
+    requiresInvestigation: row["RequiresInvestigation"]?? "",
+    description:           row["Summary"]              ?? "No description available.",
+    reasoning:             row["Reasoning"]            ?? "",
+    risk:                  row["Risk"]                 ?? "",
+    confidence:            row["Confidence"]           ?? "",
+    status:                row["Status"]               ?? "",
+    comments:              row["Comments"]             ?? "",
+    created:               row["Date"]                 ?? "",
+    updated:               row["LastUpdated"]          ?? row["Date"] ?? "",
+    _index:                index,
   };
 }
 
