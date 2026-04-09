@@ -17,8 +17,8 @@ export const IncidentsPage = () => {
   function handleExport() {
     exportToPDF({
       title:   "Incidents Report",
-      headers: ["ID", "Title", "Assignee", "Role", "Severity", "Status", "Date", "Description"],
-      rows:    filtered.map(i => [i.id, i.title, i.assignee, i.role, i.severity, i.status, i.created, i.description]),
+      headers: ["ID", "Title", "Assignee", "Role", "Source IP", "Service", "Severity", "Risk", "Confidence", "Status", "Outcome", "Date", "Description"],
+      rows:    filtered.map(i => [i.id, i.title, i.assignee, i.role, i.sourceIp, i.service, i.severity, i.risk, i.confidence, i.status, i.outcome, i.created, i.description]),
     });
   }
 
@@ -36,9 +36,7 @@ export const IncidentsPage = () => {
               {s}
             </button>
           ))}
-
           <div className="ml-auto flex items-center gap-2">
-            {/* ── Export button ── */}
             {!loading && !error && (
               <button onClick={handleExport} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 text-xs font-medium hover:bg-gray-50 transition-colors">
                 <Download size={12} /> Export PDF
@@ -62,12 +60,16 @@ export const IncidentsPage = () => {
                   <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded font-medium">{inc.id}</span>
                   <SeverityBadge severity={inc.severity} />
                   <StatusBadge status={inc.status} />
+                  {inc.requiresInvestigation === "TRUE" && (
+                    <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded font-medium">Investigate</span>
+                  )}
                 </div>
                 <p className="text-gray-800 text-sm font-semibold">{inc.title}</p>
                 <div className="flex items-center gap-3 mt-1.5 text-gray-400 text-xs">
                   <span>{inc.assignee}</span>
                   <span>·</span>
                   <span>{inc.updated}</span>
+                  {inc.sourceIp && <><span>·</span><span className="font-mono">{inc.sourceIp}</span></>}
                 </div>
               </div>
               <ChevronRight size={15} className="text-gray-300 shrink-0 mt-1" />
@@ -78,35 +80,72 @@ export const IncidentsPage = () => {
 
       {/* Detail panel */}
       {selected && (
-        <div className="shrink-0 bg-white border border-gray-200 rounded-xl overflow-hidden flex flex-col" style={{ width: 340 }}>
+        <div className="shrink-0 bg-white border border-gray-200 rounded-xl overflow-hidden flex flex-col" style={{ width: 360 }}>
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
             <span className="text-xs text-gray-500 font-semibold">{selected.id}</span>
             <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-gray-600"><X size={15} /></button>
           </div>
 
           <div className="flex-1 overflow-y-auto">
+
+            {/* Title + badges */}
             <div className="p-5 border-b border-gray-100">
               <h2 className="text-gray-800 font-semibold text-sm leading-snug mb-2.5">{selected.title}</h2>
               <div className="flex gap-2 flex-wrap">
                 <SeverityBadge severity={selected.severity} />
                 <StatusBadge status={selected.status} />
+                {selected.requiresInvestigation === "TRUE" && (
+                  <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded font-medium">Requires Investigation</span>
+                )}
+                {selected.noise === "TRUE" && (
+                  <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded font-medium">Noise</span>
+                )}
               </div>
             </div>
 
+            {/* Meta fields */}
             <div className="p-5 border-b border-gray-100 space-y-2">
-              {[["Assignee", selected.assignee], ["Role", selected.role], ["Date", selected.created], ["Updated", selected.updated]].map(([k, v]) => (
+              {[
+                ["Assignee",   selected.assignee],
+                ["Role",       selected.role],
+                ["Source IP",  selected.sourceIp  || "—"],
+                ["Service",    selected.service   || "—"],
+                ["Outcome",    selected.outcome   || "—"],
+                ["Risk",       selected.risk      || "—"],
+                ["Confidence", selected.confidence|| "—"],
+                ["Date",       selected.created],
+                ["Updated",    selected.updated],
+              ].map(([k, v]) => (
                 <div key={k} className="flex items-center justify-between">
                   <span className="text-gray-400 text-xs">{k}</span>
-                  <span className="text-gray-700 text-xs font-medium">{v}</span>
+                  <span className="text-gray-700 text-xs font-medium font-mono">{v}</span>
                 </div>
               ))}
             </div>
 
+            {/* Description */}
             <div className="p-5 border-b border-gray-100">
               <p className="text-gray-500 text-xs font-medium mb-1.5">Description</p>
               <p className="text-gray-600 text-xs leading-relaxed">{selected.description}</p>
             </div>
 
+            {/* Reasoning */}
+            {selected.reasoning && (
+              <div className="p-5 border-b border-gray-100">
+                <p className="text-gray-500 text-xs font-medium mb-1.5">Reasoning</p>
+                <p className="text-gray-600 text-xs leading-relaxed">{selected.reasoning}</p>
+              </div>
+            )}
+
+            {/* Comments */}
+            {selected.comments && (
+              <div className="p-5 border-b border-gray-100">
+                <p className="text-gray-500 text-xs font-medium mb-1.5">Comments</p>
+                <p className="text-gray-600 text-xs leading-relaxed">{selected.comments}</p>
+              </div>
+            )}
+
+            {/* Update status */}
             <div className="p-5">
               <p className="text-gray-500 text-xs font-medium mb-2">Update Status</p>
               <div className="flex gap-2 flex-wrap">
