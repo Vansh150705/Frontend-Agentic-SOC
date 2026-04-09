@@ -10,7 +10,6 @@ function sheetsUrl(spreadsheetId, sheetName) {
   return `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${API_KEY}`;
 }
 
-// ── Fixed parseSheet — handles short/incomplete rows ──────────────────────
 function parseSheet(json) {
   const values = json.values ?? [];
   if (values.length < 2) return [];
@@ -34,10 +33,12 @@ function severityToLevel(severity) {
 function mapRow(row, index) {
   return {
     id:        index,
-    timestamp: row["Date"]    ?? "",
+    timestamp: row["Date"]     ?? "",
     level:     severityToLevel(row["Severity"]),
-    source:    row["User"]    ?? "",
-    event:     row["Summary"] ?? row["Event"] ?? "",
+    source:    row["User"]     ?? "",
+    event:     row["Summary"]  ?? row["Event"] ?? "",
+    outcome:   row["Outcome"]  ?? "",
+    service:   row["Service"]  ?? "",
   };
 }
 
