@@ -26,14 +26,15 @@ export const LogsPage = () => {
   function handleExport() {
     exportToPDF({
       title:   "Security Logs Report",
-      headers: ["Timestamp", "Level", "Source", "Event"],
-      rows:    filtered.map(l => [l.timestamp, l.level, l.source, l.event]),
+      headers: ["Timestamp", "Level", "Source", "Service", "Outcome", "Event"],
+      rows:    filtered.map(l => [l.timestamp, l.level, l.source, l.service, l.outcome, l.event]),
     });
   }
 
   return (
     <div className="space-y-4">
 
+      {/* Controls */}
       <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex flex-wrap gap-3 items-center">
         <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-2 flex-1 min-w-[180px]">
           <Search size={14} className="text-gray-400 shrink-0" />
@@ -62,6 +63,7 @@ export const LogsPage = () => {
         )}
       </div>
 
+      {/* Table */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         {loading && <p className="px-5 py-4 text-slate-400 text-xs">Loading logs…</p>}
         {error   && <p className="px-5 py-4 text-red-500 text-xs">Failed to load: {error}</p>}
@@ -71,7 +73,7 @@ export const LogsPage = () => {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50">
-                  {["Timestamp", "Level", "Source", "Event"].map((h) => (
+                  {["Timestamp", "Level", "Source", "Service", "Outcome", "Event"].map((h) => (
                     <th key={h} className="text-left px-4 py-2.5 text-gray-500 font-medium text-xs">{h}</th>
                   ))}
                 </tr>
@@ -82,6 +84,8 @@ export const LogsPage = () => {
                     <td className="px-4 py-2.5 font-mono text-gray-400 text-xs whitespace-nowrap">{l.timestamp}</td>
                     <td className="px-4 py-2.5"><LogLevelBadge level={l.level} /></td>
                     <td className="px-4 py-2.5 text-blue-600 text-xs whitespace-nowrap">{l.source}</td>
+                    <td className="px-4 py-2.5 text-gray-500 text-xs">{l.service || "—"}</td>
+                    <td className="px-4 py-2.5 text-gray-500 text-xs">{l.outcome || "—"}</td>
                     <td className="px-4 py-2.5 text-gray-600 text-xs max-w-xs truncate">{l.event}</td>
                   </tr>
                 ))}
