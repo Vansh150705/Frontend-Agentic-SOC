@@ -1,17 +1,15 @@
 import { useState, useEffect, useRef } from "react";
 
-const API_KEY = import.meta.env.VITE_GOOGLE_API_KEY;
-const ALERTS_ID      = "1t8DDSoJ3-YTvvQgPt11yW6mqcGpqKQh4VTThUq0vVuc";
-const THREATS_ID     = "1pz0k4MUBUVreH-yC-H3D2ZYAqfbZys2ef-kafEGFOJI";
-const REFRESH_MS     = 10_000;
+const API_KEY    = import.meta.env.VITE_GOOGLE_API_KEY;
+const ALERTS_ID  = "1t8DDSoJ3-YTvvQgPt11yW6mqcGpqKQh4VTThUq0vVuc";
+const THREATS_ID = "1pz0k4MUBUVreH-yC-H3D2ZYAqfbZys2ef-kafEGFOJI";
+const REFRESH_MS = 10_000;
 
-// ── Google Sheets API URL builder ─────────────────────────────────────────
 function sheetsUrl(spreadsheetId, sheetName) {
   const range = encodeURIComponent(`${sheetName}!A1:Z1000`);
   return `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${API_KEY}`;
 }
 
-// ── Convert raw API response to array of objects ──────────────────────────
 function parseSheet(json) {
   const values = json.values ?? [];
   if (values.length < 2) return [];
@@ -23,18 +21,28 @@ function parseSheet(json) {
       Object.fromEntries(headers.map((h, i) => [h, (row[i] ?? "").toString().trim()]))
     );
 }
-// ── Row mappers ────────────────────────────────────────────────────────────
+
+// ── Updated mapAlertRow with all new columns ──────────────────────────────
 function mapAlertRow(row) {
   return {
-    id:          row["AlertID"]     ?? "",
-    time:        row["Date"]        ?? "",
-    type:        row["Event"]       ?? "",
-    user:        row["User"]        ?? "",
-    role:        row["Role"]        ?? "",
-    severity:    row["Severity"]    ?? "",
-    status:      row["Status"]      ?? "",
-    summary:     row["Summary"]     ?? "",
-    lastUpdated: row["LastUpdated"] ?? "",
+    id:                   row["AlertID"]              ?? "",
+    time:                 row["Date"]                 ?? "",
+    type:                 row["Event"]                ?? "",
+    user:                 row["User"]                 ?? "",
+    role:                 row["Role"]                 ?? "",
+    sourceIp:             row["SourceIP"]             ?? "",
+    service:              row["Service"]              ?? "",
+    outcome:              row["Outcome"]              ?? "",
+    severity:             row["Severity"]             ?? "",
+    noise:                row["Noise"]                ?? "",
+    requiresInvestigation:row["RequiresInvestigation"]?? "",
+    summary:              row["Summary"]              ?? "",
+    reasoning:            row["Reasoning"]            ?? "",
+    risk:                 row["Risk"]                 ?? "",
+    confidence:           row["Confidence"]           ?? "",
+    status:               row["Status"]               ?? "",
+    comments:             row["Comments"]             ?? "",
+    lastUpdated:          row["LastUpdated"]          ?? "",
   };
 }
 
@@ -46,7 +54,6 @@ function mapThreatRow(row) {
   };
 }
 
-// ── Derived computations ───────────────────────────────────────────────────
 function computeStats(alerts) {
   const total     = alerts.length;
   const highCount = alerts.filter(a => a.severity?.toUpperCase() === "HIGH").length;
@@ -98,7 +105,6 @@ function severityToNotifType(severity) {
   return "info";
 }
 
-// ── Main hook ──────────────────────────────────────────────────────────────
 export function useAlertsData(onNewAlerts) {
   const [alerts,       setAlerts]       = useState([]);
   const [stats,        setStats]        = useState({ total: 0, highCount: 0, openCount: 0, noAction: 0 });
