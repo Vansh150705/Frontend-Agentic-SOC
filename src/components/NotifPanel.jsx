@@ -1,6 +1,6 @@
 import { X } from "lucide-react";
 
-const NotifPanel = ({ notifs, onClose }) => {
+const NotifPanel = ({ notifs, onClose, markAllAsRead }) => {
   const dot = {
     critical: "bg-red-500",
     high:     "bg-orange-400",
@@ -8,9 +8,11 @@ const NotifPanel = ({ notifs, onClose }) => {
     info:     "bg-blue-400",
   };
 
+  const hasUnread = notifs.some(n => !n.read);
+
   return (
     <div className="absolute right-0 top-full mt-1.5 w-72 bg-white border border-gray-200 rounded-xl shadow-lg z-50">
-      
+
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
         <p className="text-gray-800 font-semibold text-sm">Notifications</p>
@@ -21,6 +23,9 @@ const NotifPanel = ({ notifs, onClose }) => {
 
       {/* List */}
       <div className="max-h-64 overflow-y-auto divide-y divide-gray-100">
+        {notifs.length === 0 && (
+          <p className="px-4 py-6 text-gray-400 text-xs text-center">No notifications</p>
+        )}
         {notifs.map((n) => (
           <div
             key={n.id}
@@ -35,9 +40,13 @@ const NotifPanel = ({ notifs, onClose }) => {
         ))}
       </div>
 
-      {/* Footer */}
+      {/* Footer — ── Mark all as read now functional ── */}
       <div className="px-4 py-2.5 border-t border-gray-100">
-        <button className="text-blue-600 text-xs hover:text-blue-700">
+        <button
+          onClick={() => { markAllAsRead(); onClose(); }}
+          disabled={!hasUnread}
+          className={`text-xs transition-colors ${hasUnread ? "text-blue-600 hover:text-blue-700" : "text-gray-300 cursor-not-allowed"}`}
+        >
           Mark all as read
         </button>
       </div>
