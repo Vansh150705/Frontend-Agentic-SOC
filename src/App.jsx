@@ -20,8 +20,13 @@ export default function App() {
 
   const handleNewAlerts = useCallback((newNotifs) => {
     setNotifs(prev => [...newNotifs, ...prev]);
-    playAlert(); // ── play sound on every new alert ──
+    playAlert();
   }, [playAlert]);
+
+  // ── Mark all notifications as read ───────────────────────────────────────
+  const markAllAsRead = useCallback(() => {
+    setNotifs(prev => prev.map(n => ({ ...n, read: true })));
+  }, []);
 
   if (!loggedIn) return <LoginPage onLogin={() => setLoggedIn(true)} />;
 
@@ -37,7 +42,8 @@ export default function App() {
     <div className="flex h-screen overflow-hidden bg-slate-50 font-sans">
       <Sidebar active={page} setActive={setPage} collapsed={collapsed} setCollapsed={setCollapsed} />
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-        <Topbar page={page} notifs={notifs} showNotif={showNotif} setShowNotif={setShowNotif} />
+        {/* ── pass markAllAsRead down to Topbar ── */}
+        <Topbar page={page} notifs={notifs} showNotif={showNotif} setShowNotif={setShowNotif} markAllAsRead={markAllAsRead} />
         <main className="flex-1 overflow-y-auto p-5" onClick={() => showNotif && setShowNotif(false)}>
           {pages[page]}
         </main>
