@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-const API_KEY = import.meta.env.VITE_GOOGLE_API_KEY;
+const API_KEY    = import.meta.env.VITE_GOOGLE_API_KEY;
 const SHEET_ID   = "1pz0k4MUBUVreH-yC-H3D2ZYAqfbZys2ef-kafEGFOJI";
 const SHEET_NAME = "user history";
 const REFRESH_MS = 10_000;
@@ -10,22 +10,30 @@ function sheetsUrl(spreadsheetId, sheetName) {
   return `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${API_KEY}`;
 }
 
+// ── Fixed parseSheet — handles short/incomplete rows ──────────────────────
 function parseSheet(json) {
-  const [headers, ...rows] = json.values ?? [];
-  if (!headers) return [];
-  return rows.map(row =>
-    Object.fromEntries(headers.map((h, i) => [h, row[i] ?? ""]))
-  );
+  const values = json.values ?? [];
+  if (values.length < 2) return [];
+  const headers = values[0];
+  const rows = values.slice(1);
+  return rows
+    .filter(row => row.length > 0 && row.some(cell => String(cell).trim() !== ""))
+    .map(row =>
+      Object.fromEntries(headers.map((h, i) => [h, (row[i] ?? "").toString().trim()]))
+    );
 }
 
+// ── Updated mapRow with new columns ───────────────────────────────────────
 function mapRow(row) {
   return {
-    id:       row["AlertID"]  ?? "",
-    user:     row["User"]     ?? "",
-    role:     row["Role"]     ?? "",
-    type:     row["Event"]    ?? "",
-    date:     row["Date"]     ?? "",
-    severity: row["Severity"] ?? "",
+    id:         row["AlertID"]    ?? "",
+    user:       row["User"]       ?? "",
+    role:       row["Role"]       ?? "",
+    type:       row["Event"]      ?? "",
+    date:       row["Date"]       ?? "",
+    summary:    row["Summary"]    ?? "",
+    risk:       row["Risk"]       ?? "",
+    confidence: row["Confidence"] ?? "",
   };
 }
 
@@ -45,7 +53,7 @@ export function useThreatsData() {
         if (!cancelled) {
           const clean = parseSheet(json)
             .map(mapRow)
-            .filter(r => r.user && r.user !== "0");
+            .filter(r => r.user && r.user !== "0" && r.user !== "null" && r.user !== "unknown");
           setThreats(clean);
           setError(null);
         }
