@@ -1,19 +1,18 @@
 import { Bell, LogOut } from "lucide-react";
 import NotifPanel from "./NotifPanel";
 
-const Topbar = ({ page, notifs, showNotif, setShowNotif }) => {
+const Topbar = ({ page, notifs, showNotif, setShowNotif, markAllAsRead }) => {
   const unread = notifs.filter((n) => !n.read).length;
   const titles = {
     dashboard: "Overview",
-    threats: "Threat Monitor",
+    threats:   "Threat Monitor",
     incidents: "Incident Management",
-    logs: "Security Logs",
-    admin: "Admin",
+    logs:      "Security Logs",
+    admin:     "Admin",
   };
 
   return (
     <header className="h-14 bg-white border-b border-gray-200 flex items-center px-5 gap-4 shrink-0">
-      {/* Page title */}
       <h1 className="text-gray-800 font-semibold text-base">{titles[page]}</h1>
 
       <div className="ml-auto flex items-center gap-3">
@@ -31,8 +30,13 @@ const Topbar = ({ page, notifs, showNotif, setShowNotif }) => {
               </span>
             )}
           </button>
+          {/* ── pass markAllAsRead to NotifPanel ── */}
           {showNotif && (
-            <NotifPanel notifs={notifs} onClose={() => setShowNotif(false)} />
+            <NotifPanel
+              notifs={notifs}
+              onClose={() => setShowNotif(false)}
+              markAllAsRead={markAllAsRead}
+            />
           )}
         </div>
 
@@ -42,7 +46,7 @@ const Topbar = ({ page, notifs, showNotif, setShowNotif }) => {
             AC
           </div>
           <div>
-            <p className="text-gray-700 text-xs font-semibold leading-none">Vansh Mahajan</p>
+            <p className="text-gray-700 text-xs font-semibold leading-none">Alex Chen</p>
             <p className="text-gray-400 text-[10px] mt-0.5">Admin</p>
           </div>
         </div>
