@@ -22,35 +22,34 @@ function parseSheet(json) {
     );
 }
 
-// ── Updated mapAlertRow with all new columns ──────────────────────────────
 function mapAlertRow(row) {
   return {
-    id:                   row["AlertID"]              ?? "",
-    time:                 row["Date"]                 ?? "",
-    type:                 row["Event"]                ?? "",
-    user:                 row["User"]                 ?? "",
-    role:                 row["Role"]                 ?? "",
-    sourceIp:             row["SourceIP"]             ?? "",
-    service:              row["Service"]              ?? "",
-    outcome:              row["Outcome"]              ?? "",
-    severity:             row["Severity"]             ?? "",
-    noise:                row["Noise"]                ?? "",
-    requiresInvestigation:row["RequiresInvestigation"]?? "",
-    summary:              row["Summary"]              ?? "",
-    reasoning:            row["Reasoning"]            ?? "",
-    risk:                 row["Risk"]                 ?? "",
-    confidence:           row["Confidence"]           ?? "",
-    status:               row["Status"]               ?? "",
-    comments:             row["Comments"]             ?? "",
-    lastUpdated:          row["LastUpdated"]          ?? "",
+    id:                    row["AlertID"]               ?? "",
+    time:                  row["Date"]                  ?? "",
+    type:                  row["Event"]                 ?? "",
+    user:                  row["User"]                  ?? "",
+    role:                  row["Role"]                  ?? "",
+    sourceIp:              row["SourceIP"]              ?? "",
+    service:               row["Service"]               ?? "",
+    outcome:               row["Outcome"]               ?? "",
+    severity:              row["Severity"]              ?? "",
+    noise:                 row["Noise"]                 ?? "",
+    requiresInvestigation: row["RequiresInvestigation"] ?? "",
+    summary:               row["Summary"]               ?? "",
+    reasoning:             row["Reasoning"]             ?? "",
+    risk:                  row["Risk"]                  ?? "",
+    confidence:            row["Confidence"]            ?? "",
+    status:                row["Status"]                ?? "",
+    comments:              row["Comments"]              ?? "",
+    lastUpdated:           row["LastUpdated"]           ?? "",
   };
 }
 
 function mapThreatRow(row) {
   return {
-    date:     row["Date"]     ?? "",
-    severity: row["Severity"] ?? "",
-    user:     row["User"]     ?? "",
+    date: row["Date"] ?? "",
+    risk: row["Risk"] ?? "",
+    user: row["User"] ?? "",
   };
 }
 
@@ -92,14 +91,20 @@ function computeThreatTrend(threats) {
     return d;
   };
 
-  threats.filter(t => t.user && t.user !== "0").forEach(t => {
-    const date = normalizeDate(t.date) || "Unknown";
-    if (!map[date]) map[date] = { time: date, critical: 0, high: 0, medium: 0 };
-    const s = t.severity?.toUpperCase();
-    if      (s === "CRITICAL") map[date].critical++;
-    else if (s === "HIGH")     map[date].high++;
-    else if (s === "MEDIUM")   map[date].medium++;
-  });
+  threats
+    .filter(t => t.user && t.user !== "0" && t.user !== "null" && t.user !== "unknown")
+    .forEach(t => {
+      const date = normalizeDate(t.date) || "Unknown";
+      if (!map[date]) map[date] = { time: date, critical: 0, high: 0, medium: 0 };
+
+      // ── FIXED: use risk field instead of severity ──────────────────────
+      const r = t.risk?.toLowerCase() ?? "";
+      if      (r.includes("critical"))     map[date].critical++;
+      else if (r.includes("high"))         map[date].high++;
+      else if (r.includes("unauthorized")) map[date].medium++;
+      else if (r.includes("account"))      map[date].medium++;
+      else if (r)                          map[date].medium++;
+    });
 
   const parseDate = (d) => {
     if (!d || d === "Unknown") return new Date(0);
