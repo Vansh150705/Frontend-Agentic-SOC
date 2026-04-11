@@ -1,5 +1,5 @@
 import {
-  AreaChart, Area, PieChart, Pie, Cell,
+  BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from "recharts";
 import { AlertTriangle, CheckCircle, ShieldAlert, AlertOctagon, ExternalLink, Download } from "lucide-react";
@@ -34,17 +34,19 @@ export const DashboardPage = ({ onNewAlerts }) => {
 
       {/* ── Charts row ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+        {/* ── ONLY CHANGE: AreaChart → BarChart ── */}
         <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-slate-800 font-semibold text-sm">Threat Activity</h3>
-              <p className="text-slate-400 text-xs mt-0.5">Volume by severity — by date</p>
+              <p className="text-slate-400 text-xs mt-0.5">Volume by risk level — by date</p>
             </div>
           </div>
           <div className="flex items-center gap-4 mb-3">
             {[["Critical", "#dc2626"], ["High", "#ea580c"], ["Medium", "#ca8a04"]].map(([l, c]) => (
               <div key={l} className="flex items-center gap-1.5">
-                <span className="w-2.5 h-0.5 rounded" style={{ background: c }} />
+                <span className="w-2.5 h-2.5 rounded-sm" style={{ background: c }} />
                 <span className="text-slate-500 text-xs">{l}</span>
               </div>
             ))}
@@ -53,27 +55,20 @@ export const DashboardPage = ({ onNewAlerts }) => {
             <p className="text-slate-400 text-xs py-10 text-center">Loading chart…</p>
           ) : (
             <ResponsiveContainer width="100%" height={210}>
-              <AreaChart data={threatTrend} margin={{ top: 4, right: 0, left: -20, bottom: 0 }}>
-                <defs>
-                  {[["critical", "#dc2626"], ["high", "#ea580c"], ["medium", "#ca8a04"]].map(([k, c]) => (
-                    <linearGradient key={k} id={`g-${k}`} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={c} stopOpacity={0.12} />
-                      <stop offset="100%" stopColor={c} stopOpacity={0} />
-                    </linearGradient>
-                  ))}
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+              <BarChart data={threatTrend} margin={{ top: 4, right: 0, left: -20, bottom: 0 }} barCategoryGap="30%">
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                 <XAxis dataKey="time" stroke="#e2e8f0" tick={{ fontSize: 10, fill: "#94a3b8", fontFamily: "monospace" }} />
-                <YAxis stroke="#e2e8f0" tick={{ fontSize: 10, fill: "#94a3b8" }} />
+                <YAxis stroke="#e2e8f0" tick={{ fontSize: 10, fill: "#94a3b8" }} allowDecimals={false} />
                 <Tooltip content={<ChartTooltip />} />
-                <Area type="monotone" dataKey="critical" stroke="#dc2626" strokeWidth={1.5} fill="url(#g-critical)" name="Critical" dot={false} />
-                <Area type="monotone" dataKey="high"     stroke="#ea580c" strokeWidth={1.5} fill="url(#g-high)"     name="High"     dot={false} />
-                <Area type="monotone" dataKey="medium"   stroke="#ca8a04" strokeWidth={1.5} fill="url(#g-medium)"   name="Medium"   dot={false} />
-              </AreaChart>
+                <Bar dataKey="critical" fill="#dc2626" name="Critical" radius={[2, 2, 0, 0]} maxBarSize={20} />
+                <Bar dataKey="high"     fill="#ea580c" name="High"     radius={[2, 2, 0, 0]} maxBarSize={20} />
+                <Bar dataKey="medium"   fill="#ca8a04" name="Medium"   radius={[2, 2, 0, 0]} maxBarSize={20} />
+              </BarChart>
             </ResponsiveContainer>
           )}
         </div>
 
+        {/* Donut chart — unchanged */}
         <div className="bg-white rounded-xl border border-slate-200 p-5">
           <h3 className="text-slate-800 font-semibold text-sm mb-0.5">Distribution</h3>
           <p className="text-slate-400 text-xs mb-3">By severity — alert record</p>
@@ -106,7 +101,7 @@ export const DashboardPage = ({ onNewAlerts }) => {
         </div>
       </div>
 
-      {/* ── Recent Alerts table ── */}
+      {/* ── Recent Alerts table — unchanged ── */}
       <div className="bg-white rounded-xl border border-slate-200">
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
           <div>
