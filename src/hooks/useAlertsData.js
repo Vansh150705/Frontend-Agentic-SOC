@@ -80,24 +80,40 @@ function computeSeverityDist(alerts) {
 function computeEventTypeDist(alerts) {
   const counts = {};
   alerts.forEach(a => {
-    const type = a.type?.trim();
+    let type = a.type?.trim();
     if (!type) return;
-    // normalize similar event names
-    const key = type.toLowerCase()
-      .replace(/priviel?ege?\s*escal?a?tion/i, "privilege escalation")
-      .replace(/failed?\s*login/i,             "failed login")
-      .replace(/iam\s*change/i,                "IAM change")
-      .replace(/impossible\s*travel/i,         "impossible travel")
-      .replace(/system\s*crash/i,              "system crash");
-    counts[key] = (counts[key] || 0) + 1;
+
+    // shorten long raw log strings to a clean label
+    if (type.includes("Failed password") || type.includes("failed login") || type.toLowerCase().includes("failed login")) {
+      type = "Failed Login";
+    } else if (type.toLowerCase().includes("privilege") || type.toLowerCase().includes("priviele") || type.toLowerCase().includes("privelege")) {
+      type = "Privilege Escalation";
+    } else if (type.toLowerCase().includes("phishing")) {
+      type = "Potential Phishing";
+    } else if (type.toLowerCase().includes("breach")) {
+      type = "Potential Breach";
+    } else if (type.toLowerCase().includes("malware")) {
+      type = "Malware Activity";
+    } else if (type.toLowerCase().includes("iam")) {
+      type = "IAM Change";
+    } else if (type.toLowerCase().includes("impossible")) {
+      type = "Impossible Travel";
+    } else if (type.toLowerCase().includes("system crash")) {
+      type = "System Crash";
+    } else if (type.toLowerCase().includes("brute")) {
+      type = "Brute Force";
+    } else {
+      // truncate anything else to 25 chars
+      type = type.length > 25 ? type.slice(0, 25) + "…" : type;
+    }
+
+    counts[type] = (counts[type] || 0) + 1;
   });
+
   return Object.entries(counts)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 6)
-    .map(([name, count]) => ({
-      name: name.charAt(0).toUpperCase() + name.slice(1),
-      count,
-    }));
+    .map(([name, count]) => ({ name, count }));
 }
 
 // ── Top Users by Alert Count — top 6 ─────────────────────────────────────
