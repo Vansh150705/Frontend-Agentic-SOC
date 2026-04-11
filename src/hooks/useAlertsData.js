@@ -30,7 +30,7 @@ function mapAlertRow(row) {
     user:                  row["User"]                  ?? "",
     role:                  row["Role"]                  ?? "",
     sourceIp:              row["SourceIP"]              ?? "",
-    service:               row["Service"]               ?? "",
+    service:               row["Service"]              ?? "",
     outcome:               row["Outcome"]               ?? "",
     severity:              row["Severity"]              ?? "",
     noise:                 row["Noise"]                 ?? "",
@@ -76,44 +76,42 @@ function computeSeverityDist(alerts) {
   ].filter(d => d.value > 0);
 }
 
-function computeThreatTrend(threats) {
-  const map = {};
+// ── Alerts by Event Type — top 6 most common ──────────────────────────────
+function computeEventTypeDist(alerts) {
+  const counts = {};
+  alerts.forEach(a => {
+    const type = a.type?.trim();
+    if (!type) return;
+    // normalize similar event names
+    const key = type.toLowerCase()
+      .replace(/priviel?ege?\s*escal?a?tion/i, "privilege escalation")
+      .replace(/failed?\s*login/i,             "failed login")
+      .replace(/iam\s*change/i,                "IAM change")
+      .replace(/impossible\s*travel/i,         "impossible travel")
+      .replace(/system\s*crash/i,              "system crash");
+    counts[key] = (counts[key] || 0) + 1;
+  });
+  return Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 6)
+    .map(([name, count]) => ({
+      name: name.charAt(0).toUpperCase() + name.slice(1),
+      count,
+    }));
+}
 
-  // normalize any date format to DD/MM/YYYY for consistent grouping
-  const normalizeDate = (d) => {
-    if (!d || d === "Unknown") return "Unknown";
-    try {
-      const date = new Date(d);
-      if (!isNaN(date.getTime())) {
-        return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
-      }
-    } catch (e) {}
-    return d;
-  };
-
-  threats
-    .filter(t => t.user && t.user !== "0" && t.user !== "null" && t.user !== "unknown")
-    .forEach(t => {
-      const date = normalizeDate(t.date) || "Unknown";
-      if (!map[date]) map[date] = { time: date, critical: 0, high: 0, medium: 0 };
-
-      // ── FIXED: use risk field instead of severity ──────────────────────
-      const r = t.risk?.toLowerCase() ?? "";
-      if      (r.includes("critical"))     map[date].critical++;
-      else if (r.includes("high"))         map[date].high++;
-      else if (r.includes("unauthorized")) map[date].medium++;
-      else if (r.includes("account"))      map[date].medium++;
-      else if (r)                          map[date].medium++;
-    });
-
-  const parseDate = (d) => {
-    if (!d || d === "Unknown") return new Date(0);
-    if (d.includes("-")) return new Date(d);
-    const [day, month, year] = d.split("/");
-    return new Date(`${year}-${String(month).padStart(2,"0")}-${String(day).padStart(2,"0")}`);
-  };
-
-  return Object.values(map).sort((a, b) => parseDate(a.time) - parseDate(b.time));
+// ── Top Users by Alert Count — top 6 ─────────────────────────────────────
+function computeTopUsers(alerts) {
+  const counts = {};
+  alerts.forEach(a => {
+    const user = a.user?.trim();
+    if (!user) return;
+    counts[user] = (counts[user] || 0) + 1;
+  });
+  return Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 6)
+    .map(([name, count]) => ({ name, count }));
 }
 
 function severityToNotifType(severity) {
@@ -125,12 +123,13 @@ function severityToNotifType(severity) {
 }
 
 export function useAlertsData(onNewAlerts) {
-  const [alerts,       setAlerts]       = useState([]);
-  const [stats,        setStats]        = useState({ total: 0, highCount: 0, openCount: 0, noAction: 0 });
-  const [severityDist, setSeverityDist] = useState([]);
-  const [threatTrend,  setThreatTrend]  = useState([]);
-  const [loading,      setLoading]      = useState(true);
-  const [error,        setError]        = useState(null);
+  const [alerts,         setAlerts]         = useState([]);
+  const [stats,          setStats]          = useState({ total: 0, highCount: 0, openCount: 0, noAction: 0 });
+  const [severityDist,   setSeverityDist]   = useState([]);
+  const [eventTypeDist,  setEventTypeDist]  = useState([]);
+  const [topUsers,       setTopUsers]       = useState([]);
+  const [loading,        setLoading]        = useState(true);
+  const [error,          setError]          = useState(null);
 
   const seenIds = useRef(new Set());
 
@@ -176,7 +175,8 @@ export function useAlertsData(onNewAlerts) {
           setAlerts(mappedAlerts);
           setStats(computeStats(mappedAlerts));
           setSeverityDist(computeSeverityDist(mappedAlerts));
-          setThreatTrend(computeThreatTrend(mappedThreats));
+          setEventTypeDist(computeEventTypeDist(mappedAlerts));
+          setTopUsers(computeTopUsers(mappedAlerts));
           setError(null);
         }
       } catch (err) {
@@ -191,5 +191,5 @@ export function useAlertsData(onNewAlerts) {
     return () => { cancelled = true; clearInterval(timer); };
   }, []);
 
-  return { alerts, stats, severityDist, threatTrend, loading, error };
+  return { alerts, stats, severityDist, eventTypeDist, topUsers, loading, error };
 }

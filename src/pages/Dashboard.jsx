@@ -11,7 +11,7 @@ import { useAlertsData } from "../hooks/useAlertsData";
 import { exportToPDF } from "../utils/exportPDF";
 
 export const DashboardPage = ({ onNewAlerts }) => {
-  const { alerts: recentAlerts, stats, severityDist, threatTrend, loading, error } = useAlertsData(onNewAlerts);
+  const { alerts: recentAlerts, stats, severityDist, eventTypeDist, topUsers, loading, error } = useAlertsData(onNewAlerts);
 
   function handleExport() {
     exportToPDF({
@@ -35,69 +35,99 @@ export const DashboardPage = ({ onNewAlerts }) => {
       {/* ── Charts row ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
-        {/* ── ONLY CHANGE: AreaChart → BarChart ── */}
+        {/* ── Alerts by Event Type — replaces old Threat Activity chart ── */}
         <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-slate-800 font-semibold text-sm">Threat Activity</h3>
-              <p className="text-slate-400 text-xs mt-0.5">Volume by risk level — by date</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-4 mb-3">
-            {[["Critical", "#dc2626"], ["High", "#ea580c"], ["Medium", "#ca8a04"]].map(([l, c]) => (
-              <div key={l} className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-sm" style={{ background: c }} />
-                <span className="text-slate-500 text-xs">{l}</span>
-              </div>
-            ))}
+          <div className="mb-4">
+            <h3 className="text-slate-800 font-semibold text-sm">Alerts by Event Type</h3>
+            <p className="text-slate-400 text-xs mt-0.5">Most common threat events — from alert record</p>
           </div>
           {loading ? (
             <p className="text-slate-400 text-xs py-10 text-center">Loading chart…</p>
           ) : (
             <ResponsiveContainer width="100%" height={210}>
-              <BarChart data={threatTrend} margin={{ top: 4, right: 0, left: -20, bottom: 0 }} barCategoryGap="30%">
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                <XAxis dataKey="time" stroke="#e2e8f0" tick={{ fontSize: 10, fill: "#94a3b8", fontFamily: "monospace" }} />
-                <YAxis stroke="#e2e8f0" tick={{ fontSize: 10, fill: "#94a3b8" }} allowDecimals={false} />
+              <BarChart
+                data={eventTypeDist}
+                layout="vertical"
+                margin={{ top: 4, right: 16, left: 8, bottom: 0 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
+                <XAxis
+                  type="number"
+                  stroke="#e2e8f0"
+                  tick={{ fontSize: 10, fill: "#94a3b8" }}
+                  allowDecimals={false}
+                />
+                <YAxis
+                  type="category"
+                  dataKey="name"
+                  stroke="#e2e8f0"
+                  tick={{ fontSize: 10, fill: "#64748b" }}
+                  width={130}
+                />
                 <Tooltip content={<ChartTooltip />} />
-                <Bar dataKey="critical" fill="#dc2626" name="Critical" radius={[2, 2, 0, 0]} maxBarSize={20} />
-                <Bar dataKey="high"     fill="#ea580c" name="High"     radius={[2, 2, 0, 0]} maxBarSize={20} />
-                <Bar dataKey="medium"   fill="#ca8a04" name="Medium"   radius={[2, 2, 0, 0]} maxBarSize={20} />
+                <Bar dataKey="count" name="Alerts" fill="#3b82f6" radius={[0, 3, 3, 0]} maxBarSize={18} />
               </BarChart>
             </ResponsiveContainer>
           )}
         </div>
 
-        {/* Donut chart — unchanged */}
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <h3 className="text-slate-800 font-semibold text-sm mb-0.5">Distribution</h3>
-          <p className="text-slate-400 text-xs mb-3">By severity — alert record</p>
-          {loading ? (
-            <p className="text-slate-400 text-xs py-10 text-center">Loading…</p>
-          ) : (
-            <>
-              <ResponsiveContainer width="100%" height={160}>
-                <PieChart>
-                  <Pie data={severityDist} cx="50%" cy="50%" innerRadius={45} outerRadius={72} paddingAngle={2} dataKey="value" strokeWidth={0}>
-                    {severityDist.map((e) => <Cell key={e.name} fill={e.color} />)}
-                  </Pie>
-                  <Tooltip content={<ChartTooltip />} />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="mt-3 space-y-2">
-                {severityDist.map((d) => (
-                  <div key={d.name} className="flex items-center gap-2.5">
-                    <span className="w-2 h-2 rounded-sm shrink-0" style={{ background: d.color }} />
-                    <span className="text-slate-500 text-xs flex-1">{d.name}</span>
-                    <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                      <div className="h-full rounded-full" style={{ width: `${d.value}%`, background: d.color }} />
+        {/* ── Right column: Severity Distribution + Top Users ── */}
+        <div className="flex flex-col gap-4">
+
+          {/* Donut chart — unchanged */}
+          <div className="bg-white rounded-xl border border-slate-200 p-5">
+            <h3 className="text-slate-800 font-semibold text-sm mb-0.5">Distribution</h3>
+            <p className="text-slate-400 text-xs mb-3">By severity — alert record</p>
+            {loading ? (
+              <p className="text-slate-400 text-xs py-4 text-center">Loading…</p>
+            ) : (
+              <>
+                <ResponsiveContainer width="100%" height={120}>
+                  <PieChart>
+                    <Pie data={severityDist} cx="50%" cy="50%" innerRadius={35} outerRadius={55} paddingAngle={2} dataKey="value" strokeWidth={0}>
+                      {severityDist.map((e) => <Cell key={e.name} fill={e.color} />)}
+                    </Pie>
+                    <Tooltip content={<ChartTooltip />} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="mt-2 space-y-1.5">
+                  {severityDist.map((d) => (
+                    <div key={d.name} className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-sm shrink-0" style={{ background: d.color }} />
+                      <span className="text-slate-500 text-xs flex-1">{d.name}</span>
+                      <span className="text-slate-700 text-xs font-semibold tabular-nums">{d.value}%</span>
                     </div>
-                    <span className="text-slate-700 text-xs font-semibold tabular-nums w-6 text-right">{d.value}%</span>
-                  </div>
-                ))}
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* ── Top Users by Alert Count ── */}
+          <div className="bg-white rounded-xl border border-slate-200 p-5">
+            <h3 className="text-slate-800 font-semibold text-sm mb-0.5">Top Users</h3>
+            <p className="text-slate-400 text-xs mb-3">By alert count</p>
+            {loading ? (
+              <p className="text-slate-400 text-xs py-4 text-center">Loading…</p>
+            ) : (
+              <div className="space-y-2">
+                {topUsers.map((u, i) => {
+                  const max = topUsers[0]?.count || 1;
+                  return (
+                    <div key={u.name} className="flex items-center gap-2">
+                      <span className="text-slate-400 text-[10px] w-3 tabular-nums">{i + 1}</span>
+                      <span className="text-slate-600 text-xs flex-1 truncate font-medium">{u.name}</span>
+                      <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full bg-blue-500" style={{ width: `${(u.count / max) * 100}%` }} />
+                      </div>
+                      <span className="text-slate-700 text-xs font-semibold tabular-nums w-4 text-right">{u.count}</span>
+                    </div>
+                  );
+                })}
               </div>
-            </>
-          )}
+            )}
+          </div>
+
         </div>
       </div>
 
