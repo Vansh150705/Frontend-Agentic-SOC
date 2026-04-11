@@ -79,8 +79,21 @@ function computeSeverityDist(alerts) {
 
 function computeThreatTrend(threats) {
   const map = {};
+
+  // normalize any date format to DD/MM/YYYY for consistent grouping
+  const normalizeDate = (d) => {
+    if (!d || d === "Unknown") return "Unknown";
+    try {
+      const date = new Date(d);
+      if (!isNaN(date.getTime())) {
+        return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
+      }
+    } catch (e) {}
+    return d;
+  };
+
   threats.filter(t => t.user && t.user !== "0").forEach(t => {
-    const date = t.date || "Unknown";
+    const date = normalizeDate(t.date) || "Unknown";
     if (!map[date]) map[date] = { time: date, critical: 0, high: 0, medium: 0 };
     const s = t.severity?.toUpperCase();
     if      (s === "CRITICAL") map[date].critical++;
@@ -94,6 +107,7 @@ function computeThreatTrend(threats) {
     const [day, month, year] = d.split("/");
     return new Date(`${year}-${String(month).padStart(2,"0")}-${String(day).padStart(2,"0")}`);
   };
+
   return Object.values(map).sort((a, b) => parseDate(a.time) - parseDate(b.time));
 }
 
